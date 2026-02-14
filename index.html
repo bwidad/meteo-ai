@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Météo Maroc - Site Vitrine Moderne</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Météo Maroc - Simulation</title>
 
 <style>
 * {
@@ -31,6 +31,7 @@ body {
   border-radius: 20px;
   padding: 30px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  animation: fadeIn 0.6s ease-in-out;
 }
 
 h1 {
@@ -44,18 +45,18 @@ h1 {
   margin-bottom: 30px;
 }
 
-.search-box select {
-  flex: 1;
+select, button {
   padding: 12px;
   border-radius: 10px;
   border: none;
   font-size: 16px;
 }
 
-.search-box button {
-  padding: 12px 20px;
-  border-radius: 10px;
-  border: none;
+select {
+  flex: 1;
+}
+
+button {
   background: white;
   color: #333;
   font-weight: bold;
@@ -63,8 +64,14 @@ h1 {
   transition: 0.3s;
 }
 
-.search-box button:hover {
+button:hover {
   background: #f1f1f1;
+}
+
+.loading {
+  text-align: center;
+  font-size: 18px;
+  margin: 20px 0;
 }
 
 .current-weather {
@@ -104,14 +111,12 @@ h1 {
   border-radius: 15px;
 }
 
-.alert {
-  margin-top: 15px;
-  padding: 10px;
-  border-radius: 10px;
-  background: rgba(255, 0, 0, 0.3);
+@keyframes fadeIn {
+  from {opacity:0; transform:translateY(10px);}
+  to {opacity:1; transform:translateY(0);}
 }
 
-@media(max-width: 600px){
+@media(max-width:600px){
   .current-weather {
     flex-direction: column;
   }
@@ -122,92 +127,98 @@ h1 {
 <body>
 
 <div class="container">
-  <h1>🌤️ Météo Maroc</h1>
+  <h1>🌤️ Météo Maroc (Simulation)</h1>
 
   <div class="search-box">
-    <select id="cityInput">
+    <select id="citySelect">
       <option value="">-- Sélectionnez une ville --</option>
-      <option value="Casablanca">Casablanca</option>
-      <option value="Rabat">Rabat</option>
-      <option value="Marrakech">Marrakech</option>
-      <option value="Fes">Fès</option>
-      <option value="Tangier">Tanger</option>
-      <option value="Agadir">Agadir</option>
-      <option value="Meknes">Meknès</option>
-      <option value="Oujda">Oujda</option>
-      <option value="Kenitra">Kénitra</option>
-      <option value="Tetouan">Tétouan</option>
-      <option value="Safi">Safi</option>
-      <option value="El Jadida">El Jadida</option>
-      <option value="Nador">Nador</option>
-      <option value="Beni Mellal">Béni Mellal</option>
-      <option value="Errachidia">Errachidia</option>
-      <option value="Taza">Taza</option>
-      <option value="Laayoune">Laâyoune</option>
-      <option value="Dakhla">Dakhla</option>
-      <option value="Khemisset">Khémisset</option>
-      <option value="Guelmim">Guelmim</option>
+      <option>Casablanca</option>
+      <option>Rabat</option>
+      <option>Marrakech</option>
+      <option>Fès</option>
+      <option>Tanger</option>
+      <option>Agadir</option>
+      <option>Meknès</option>
+      <option>Oujda</option>
+      <option>Kénitra</option>
+      <option>Tétouan</option>
+      <option>Safi</option>
+      <option>El Jadida</option>
+      <option>Nador</option>
+      <option>Béni Mellal</option>
+      <option>Errachidia</option>
+      <option>Taza</option>
+      <option>Laâyoune</option>
+      <option>Dakhla</option>
+      <option>Khémisset</option>
+      <option>Guelmim</option>
     </select>
 
-    <button onclick="getWeather()">Voir la météo</button>
+    <button onclick="simulateWeather()">Voir la météo</button>
   </div>
 
-  <div id="weatherResult"></div>
+  <div id="result"></div>
 </div>
 
 <script>
-const API_KEY = "YOUR_API_KEY";
+const weatherTypes = [
+  "ensoleillé",
+  "partiellement nuageux",
+  "nuageux",
+  "pluie légère",
+  "orage",
+  "vent fort"
+];
 
-async function getWeather() {
-  const city = document.getElementById("cityInput").value;
-  if (!city) return alert("Veuillez sélectionner une ville");
-
-  const currentURL = `https://api.openweathermap.org/data/2.5/weather?q=${city},MA&units=metric&lang=fr&appid=${API_KEY}`;
-  const forecastURL = `https://api.openweathermap.org/data/2.5/forecast?q=${city},MA&units=metric&lang=fr&appid=${API_KEY}`;
-
-  try {
-    const currentRes = await fetch(currentURL);
-    const forecastRes = await fetch(forecastURL);
-
-    const currentData = await currentRes.json();
-    const forecastData = await forecastRes.json();
-
-    displayWeather(currentData, forecastData);
-  } catch (err) {
-    alert("Erreur lors de la récupération des données.");
-  }
+function random(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function displayWeather(current, forecast) {
-  const temp = current.main.temp;
-  const description = current.weather[0].description;
-  const humidity = current.main.humidity;
-  const wind = current.wind.speed;
+function simulateWeather() {
+  const city = document.getElementById("citySelect").value;
+  if (!city) return alert("Veuillez sélectionner une ville");
 
+  const result = document.getElementById("result");
+  result.innerHTML = "<div class='loading'>⏳ Récupération des données...</div>";
+
+  setTimeout(() => {
+    const temp = random(5, 40);
+    const humidity = random(20, 90);
+    const wind = random(0, 20);
+    const description = weatherTypes[random(0, weatherTypes.length - 1)];
+
+    displayWeather(city, temp, humidity, wind, description);
+  }, 1200);
+}
+
+function displayWeather(city, temp, humidity, wind, description) {
   let forecastHTML = "";
-  const dailyData = forecast.list.filter(item => item.dt_txt.includes("12:00:00"));
+  for (let i = 1; i <= 5; i++) {
+    const dayTemp = temp + random(-5, 5);
+    const dayDesc = weatherTypes[random(0, weatherTypes.length - 1)];
+    const date = new Date();
+    date.setDate(date.getDate() + i);
+    const dayName = date.toLocaleDateString("fr-FR", { weekday: 'short' });
 
-  dailyData.slice(0,5).forEach(day => {
-    const date = new Date(day.dt_txt).toLocaleDateString("fr-FR", { weekday: 'short' });
     forecastHTML += `
       <div class="forecast-day">
-        <h4>${date}</h4>
-        <p>${day.main.temp}°C</p>
-        <p>${day.weather[0].description}</p>
+        <h4>${dayName}</h4>
+        <p>${dayTemp}°C</p>
+        <p>${dayDesc}</p>
       </div>
     `;
-  });
+  }
 
   const recommendation = generateRecommendation(temp, description, wind);
 
-  document.getElementById("weatherResult").innerHTML = `
+  document.getElementById("result").innerHTML = `
     <div class="current-weather">
       <div class="weather-card">
-        <h2>${current.name}</h2>
+        <h2>${city}</h2>
         <div class="temp">${temp}°C</div>
         <p>${description}</p>
         <p>💧 Humidité : ${humidity}%</p>
-        <p>🌬️ Vent : ${wind} m/s</p>
+        <p>🌬️ Vent : ${wind} km/h</p>
       </div>
     </div>
 
@@ -231,19 +242,19 @@ function generateRecommendation(temp, desc, wind) {
   } else if (temp < 25) {
     advice += "👕 Tenue légère idéale. ";
   } else {
-    advice += "🩳 Forte chaleur, vêtements très légers et hydratation importante. ";
+    advice += "🩳 Forte chaleur, hydratez-vous régulièrement. ";
   }
 
   if (desc.includes("pluie")) {
     advice += "☂️ Prenez un parapluie. ";
   }
 
-  if (wind > 10) {
-    advice += "🌬️ Vent fort, prudence lors des déplacements. ";
+  if (desc.includes("orage")) {
+    advice += "⚠️ Évitez les zones découvertes. ";
   }
 
-  if (temp > 35) {
-    advice += "⚠️ Alerte canicule : évitez les sorties aux heures chaudes.";
+  if (wind > 15) {
+    advice += "🌬️ Vent fort, prudence lors des déplacements. ";
   }
 
   return advice;
