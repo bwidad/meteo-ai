@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WeatherNow - Météo Moderne</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  color: white;
+}
+
+.container {
+  width: 100%;
+  max-width: 1000px;
+  backdrop-filter: blur(15px);
+  background: rgba(255,255,255,0.15);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.search-box {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.search-box input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  font-size: 16px;
+}
+
+.search-box button {
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: none;
+  background: #ffffff;
+  color: #333;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.search-box button:hover {
+  background: #f1f1f1;
+}
+
+.current-weather {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 30px;
+}
+
+.weather-card {
+  flex: 1;
+  min-width: 250px;
+}
+
+.temp {
+  font-size: 48px;
+  font-weight: bold;
+}
+
+.forecast {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 15px;
+}
+
+.forecast-day {
+  background: rgba(255,255,255,0.2);
+  padding: 15px;
+  border-radius: 15px;
+  text-align: center;
+}
+
+.recommendations {
+  margin-top: 30px;
+  padding: 20px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 15px;
+}
+
+.alert {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255, 0, 0, 0.3);
+}
+
+@media(max-width: 600px){
+  .current-weather {
+    flex-direction: column;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>🌤️ WeatherNow</h1>
+
+  <div class="search-box">
+    <input type="text" id="cityInput" placeholder="Entrez une ville..." />
+    <button onclick="getWeather()">Rechercher</button>
+  </div>
+
+  <div id="weatherResult"></div>
+</div>
+
+<script>
+const API_KEY = "YOUR_API_KEY";
+
+async function getWeather() {
+  const city = document.getElementById("cityInput").value;
+  if (!city) return alert("Veuillez entrer une ville");
+
+  const currentURL = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&lang=fr&appid=${API_KEY}`;
+  const forecastURL = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&lang=fr&appid=${API_KEY}`;
+
+  try {
+    const currentRes = await fetch(currentURL);
+    const forecastRes = await fetch(forecastURL);
+
+    const currentData = await currentRes.json();
+    const forecastData = await forecastRes.json();
+
+    displayWeather(currentData, forecastData);
+  } catch (err) {
+    alert("Erreur lors de la récupération des données.");
+  }
+}
+
+function displayWeather(current, forecast) {
+  const temp = current.main.temp;
+  const description = current.weather[0].description;
+  const humidity = current.main.humidity;
+  const wind = current.wind.speed;
+
+  let forecastHTML = "";
+  const dailyData = forecast.list.filter(item => item.dt_txt.includes("12:00:00"));
+
+  dailyData.slice(0,5).forEach(day => {
+    const date = new Date(day.dt_txt).toLocaleDateString("fr-FR", { weekday: 'short' });
+    forecastHTML += `
+      <div class="forecast-day">
+        <h4>${date}</h4>
+        <p>${day.main.temp}°C</p>
+        <p>${day.weather[0].description}</p>
+      </div>
+    `;
+  });
+
+  const recommendation = generateRecommendation(temp, description, wind);
+
+  document.getElementById("weatherResult").innerHTML = `
+    <div class="current-weather">
+      <div class="weather-card">
+        <h2>${current.name}</h2>
+        <div class="temp">${temp}°C</div>
+        <p>${description}</p>
+        <p>💧 Humidité : ${humidity}%</p>
+        <p>🌬️ Vent : ${wind} m/s</p>
+      </div>
+    </div>
+
+    <h3>📅 Prévisions 5 jours</h3>
+    <div class="forecast">${forecastHTML}</div>
+
+    <div class="recommendations">
+      <h3>👕 Recommandations</h3>
+      <p>${recommendation}</p>
+    </div>
+  `;
+}
+
+function generateRecommendation(temp, desc, wind) {
+  let advice = "";
+
+  if (temp < 5) {
+    advice += "🧥 Manteau épais, écharpe et gants recommandés. ";
+  } else if (temp < 15) {
+    advice += "🧥 Veste ou pull conseillé. ";
+  } else if (temp < 25) {
+    advice += "👕 Tenue légère idéale. ";
+  } else {
+    advice += "🩳 Forte chaleur, vêtements très légers et hydratation importante. ";
+  }
+
+  if (desc.includes("pluie")) {
+    advice += "☂️ Prenez un parapluie. ";
+  }
+
+  if (wind > 10) {
+    advice += "🌬️ Vent fort, attention aux objets extérieurs. ";
+  }
+
+  if (temp > 35) {
+    advice += "⚠️ Alerte canicule : évitez les sorties aux heures chaudes.";
+  }
+
+  return advice;
+}
+</script>
+
+</body>
+</html>
